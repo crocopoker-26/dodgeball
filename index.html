@@ -53,7 +53,7 @@
             <button id="msg-btn">开始挑战</button>
         </div>
         <div id="leaderboard" style="margin-top:15px; text-align:left; border-top:1px solid #444; padding-top:10px;">
-            <div style="text-align:center; font-weight:bold; margin-bottom:5px;">排行榜</div>
+            <div style="text-align:center; font-weight:bold; margin-bottom:5px;">全球排行榜</div>
             <div id="leaderboard-list">正在尝试连接服务器...</div>
         </div>
     </div>
@@ -64,6 +64,7 @@
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+    // 初始化 Firebase 配置
     const firebaseConfig = JSON.parse(__firebase_config);
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -98,6 +99,7 @@
         { speed: 8.8, waves: 60, spawnInterval: 390 }
     ];
 
+    // 认证流程
     async function initAuth() {
         try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -105,7 +107,10 @@
             } else {
                 await signInAnonymously(auth);
             }
-        } catch (err) {}
+        } catch (err) {
+            console.error("Auth failed:", err);
+            document.getElementById('leaderboard-list').innerHTML = "认证失败，请刷新重试";
+        }
     }
 
     onAuthStateChanged(auth, u => {
@@ -115,16 +120,31 @@
 
     initAuth();
 
+    // 实时排行榜监听
     function setupLeaderboardListener() {
         if (!db || !user) return;
+        // 严格遵循路径规则
         const q = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
         onSnapshot(q, (snap) => {
             const data = [];
-            snap.forEach(doc => data.push(doc.data()));
+            snap.forEach(doc => {
+                const item = doc.data();
+                if (item && typeof item.score === 'number') data.push(item);
+            });
+            // 简单内存排序
             data.sort((a,b) => b.score - a.score);
-            document.getElementById('leaderboard-list').innerHTML = data.slice(0, 5).map((s, i) => 
-                `<div class="leaderboard-item"><span>${i+1}. ${s.name || '匿名'}</span><span>${s.score}分</span></div>`).join('') || "暂无记录";
-        }, () => {});
+            
+            const listEl = document.getElementById('leaderboard-list');
+            if (data.length === 0) {
+                listEl.innerHTML = "<div style='text-align:center;color:#666;'>暂无纪录，快来抢占沙发！</div>";
+            } else {
+                listEl.innerHTML = data.slice(0, 5).map((s, i) => 
+                    `<div class="leaderboard-item"><span>${i+1}. ${s.name || '匿名'}</span><span>${s.score}分</span></div>`).join('');
+            }
+        }, (error) => {
+            console.error("Snapshot error:", error);
+            document.getElementById('leaderboard-list').innerHTML = "无法加载排行榜数据";
+        });
     }
 
     let audioCtx = null;
@@ -135,12 +155,11 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 找回背景音乐生成逻辑
     function startBGM() {
         if (bgmInterval) clearInterval(bgmInterval);
         if (!audioCtx) return;
         
-        const freqs = [261.63, 329.63, 392.00, 440.00, 523.25]; // C大调五声音阶
+        const freqs = [261.63, 329.63, 392.00, 440.00, 523.25];
         function playNote() {
             if (!gameState.isRunning) return;
             const freq = freqs[Math.floor(Math.random() * freqs.length)];
@@ -224,7 +243,7 @@
             gameState.obstacles.push({ lane, y: -50, type });
         });
         gameState.wavesSpawned++;
-        wavesDisplay.innerText = gameState.totalWaves - gameState.wavesSpawned;
+        wavesDisplay.innerText = Math.max(0, gameState.totalWaves - gameState.wavesSpawned);
         if (gameState.wavesSpawned === gameState.totalWaves) gameState.finishLineY = -1000;
     }
 
@@ -275,8 +294,10 @@
                     gameState.isRunning = false; 
                     if(bgmInterval) clearInterval(bgmInterval);
                     playSound('win');
-                    msgTitle.innerText = "挑战达成！"; msgBody.innerText = `最终生命值: ${gameState.health}`;
-                    nameInputContainer.style.display = 'block'; document.getElementById('main-actions').style.display='none';
+                    msgTitle.innerText = "挑战达成！"; 
+                    msgBody.innerText = `最终成就点数: ${gameState.health}分`;
+                    nameInputContainer.style.display = 'block'; 
+                    document.getElementById('main-actions').style.display = 'none';
                     messageBox.style.display = 'block';
                 }
             }
@@ -331,24 +352,38 @@
         document.getElementById('main-actions').style.display='block';
         nameInputContainer.style.display = 'none';
         
-        startBGM(); // 开始挑战时启动背景音乐
+        startBGM();
     }
 
     msgBtn.onclick = () => start(1);
     document.getElementById('btn-left').onpointerdown = (e) => { e.preventDefault(); moveLeft(); };
     document.getElementById('btn-right').onpointerdown = (e) => { e.preventDefault(); moveRight(); };
     
+    // 提交成绩逻辑
     submitBtn.onclick = async () => {
         if (!user || !db) return;
         const name = playerNameInput.value.trim() || "匿名玩家";
-        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), { 
-            name, score: gameState.health, timestamp: serverTimestamp(), uid: user.uid
-        });
-        nameInputContainer.style.display = 'none';
-        msgBody.innerText = "成绩已提交至全球排行榜！";
-        document.getElementById('main-actions').style.display='block';
-        msgBtn.innerText = "回主菜单";
-        msgBtn.onclick = () => location.reload();
+        const score = gameState.health;
+        
+        try {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "提交中...";
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), { 
+                name, 
+                score: score, 
+                timestamp: serverTimestamp(), 
+                uid: user.uid
+            });
+            nameInputContainer.style.display = 'none';
+            msgBody.innerText = "成绩已成功上传至云端排行榜！";
+            document.getElementById('main-actions').style.display='block';
+            msgBtn.innerText = "回主菜单";
+            msgBtn.onclick = () => location.reload();
+        } catch (e) {
+            console.error("Submit error:", e);
+            submitBtn.disabled = false;
+            submitBtn.innerText = "提交失败，再试一次";
+        }
     };
 
     messageBox.style.display = 'block';
