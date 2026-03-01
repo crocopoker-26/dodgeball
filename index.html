@@ -236,7 +236,7 @@
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Firebase 配置
+    // --- 初始化 Firebase ---
     const firebaseConfig = JSON.parse(__firebase_config);
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -295,7 +295,15 @@
         { speed: 8.8, waves: 60, spawnInterval: 390 }
     ];
 
-    // 初始化认证
+    // 立即显示主界面，不等待认证
+    window.onload = () => {
+        resize();
+        updateHealthUI();
+        messageBox.style.display = 'block';
+        requestAnimationFrame(gameLoop);
+    };
+
+    // 异步认证
     const initAuth = async () => {
         try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -304,15 +312,14 @@
                 await signInAnonymously(auth);
             }
         } catch (error) {
-            console.error("Auth Error", error);
-            dbStatus.innerText = '认证失败: ' + error.code;
+            dbStatus.innerText = '认证中...';
         }
     };
 
     onAuthStateChanged(auth, u => {
         user = u;
         if (user) {
-            dbStatus.innerText = '服务器已连接';
+            dbStatus.innerText = '服务器已就绪';
             loadLeaderboard();
         }
     });
@@ -321,7 +328,6 @@
 
     function loadLeaderboard() {
         if (!user) return;
-        // 遵循规则 1 的路径
         const scoresRef = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
         onSnapshot(scoresRef, (snapshot) => {
             const scores = [];
@@ -329,10 +335,9 @@
                 const data = doc.data();
                 if (data && typeof data.score === 'number') scores.push(data);
             });
-            // 规则 2: 内存中排序
             scores.sort((a, b) => b.score - a.score);
             const top10 = scores.slice(0, 10);
-            leaderboardList.innerHTML = top10.length ? '' : '暂无记录，快来占领排行榜！';
+            leaderboardList.innerHTML = top10.length ? '' : '暂无记录';
             top10.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'leaderboard-item';
@@ -340,8 +345,7 @@
                 leaderboardList.appendChild(div);
             });
         }, (err) => {
-            console.error(err);
-            leaderboardList.innerHTML = '排行榜加载失败';
+            leaderboardList.innerHTML = '排行榜暂不可用';
         });
     }
 
@@ -351,14 +355,14 @@
         const score = gameState.health;
         try {
             submitScoreBtn.disabled = true;
-            submitScoreBtn.innerText = "正在提交...";
+            submitScoreBtn.innerText = "提交中...";
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), {
                 name,
                 score,
                 timestamp: serverTimestamp(),
                 uid: user.uid
             });
-            location.reload(); // 提交后刷新查看名次
+            location.reload(); 
         } catch (e) {
             submitScoreBtn.disabled = false;
             submitScoreBtn.innerText = "提交失败";
@@ -418,7 +422,7 @@
     function moveRight() { if (gameState.playerLane < TOTAL_LANES - 1) gameState.playerLane++; }
 
     document.getElementById('btn-left').onpointerdown = (e) => { e.preventDefault(); initAudio(); moveLeft(); };
-    document.getElementById('btn-right').onpointerdown = (e) => { e.preventDefault(); moveRight(); };
+    document.getElementById('btn-right').onpointerdown = (e) => { e.preventDefault(); initAudio(); moveRight(); };
 
     window.addEventListener('keydown', (e) => {
         if (!gameState.isRunning) return;
@@ -438,8 +442,11 @@
         }
     }
 
-    function resize() { canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
-    window.onresize = resize; resize();
+    function resize() { 
+        canvas.width = canvas.clientWidth; 
+        canvas.height = canvas.clientHeight; 
+    }
+    window.addEventListener('resize', resize);
 
     function spawnWave() {
         if (gameState.wavesSpawned >= gameState.totalWaves) return;
@@ -458,6 +465,12 @@
         gameState.wavesSpawned++;
         wavesDisplay.innerText = gameState.totalWaves - gameState.wavesSpawned;
         if (gameState.wavesSpawned === gameState.totalWaves) gameState.finishLineY = -1000;
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
     }
 
     function update() {
@@ -496,26 +509,34 @@
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const laneW = canvas.width / TOTAL_LANES;
+        
+        // 绘制车道线
         ctx.strokeStyle = 'rgba(255,255,255,0.05)';
         for(let i=1; i<TOTAL_LANES; i++) {
             ctx.beginPath(); ctx.moveTo(i*laneW, 0); ctx.lineTo(i*laneW, canvas.height); ctx.stroke();
         }
+        
+        // 绘制终点线
         if (gameState.wavesSpawned === gameState.totalWaves) {
             ctx.fillStyle = 'var(--finish)'; ctx.fillRect(0, gameState.finishLineY, canvas.width, 25);
         }
+        
+        // 绘制玩家
         ctx.fillStyle = "#ffffff";
         ctx.beginPath(); ctx.arc((gameState.playerLane + 0.5) * laneW, canvas.height * 0.85, 16, 0, Math.PI*2); ctx.fill();
 
+        // 绘制障碍物
         gameState.obstacles.forEach(o => {
             ctx.fillStyle = o.type === 'red' ? '#ff4444' : (o.type === 'yellow' ? '#ffb700' : '#22c55e');
             ctx.beginPath(); ctx.arc((o.lane+0.5)*laneW, o.y, 16, 0, Math.PI*2); ctx.fill();
         });
+        
+        // 屏幕震动
         if (gameState.shake > 0) {
             const s = (Math.random()-0.5)*gameState.shake;
             canvas.style.transform = `translate(${s}px, ${s}px)`;
             gameState.shake *= 0.9;
         } else canvas.style.transform = 'none';
-        requestAnimationFrame(() => { update(); draw(); });
     }
 
     function initLevel(lvl, keepHealth = false) {
@@ -583,8 +604,6 @@
     };
 
     msgBtn.onclick = () => { initAudio(); initLevel(1, false); };
-    messageBox.style.display = 'block';
-    updateHealthUI(); draw();
 </script>
 </body>
 </html>
