@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>躲避球冲刺 - 排行榜适配版</title>
+    <title>躲避球冲刺 - 布局优化版</title>
     <style>
         :root {
             --bg: #0f172a;    
@@ -11,6 +11,7 @@
             --red: #ff4444;    
             --yellow: #ffb700; 
             --green: #22c55e;  
+            --ui-height: 80px; /* 顶部 UI 预留高度 */
         }
         body {
             margin: 0;
@@ -33,39 +34,72 @@
             background: #111827;
             display: flex;
             flex-direction: column;
-            border: 2px solid #334155;
+            box-sizing: border-box;
+        }
+        
+        /* 顶部状态栏优化 */
+        #ui-header {
+            height: var(--ui-height);
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-sizing: border-box;
+            background: rgba(15, 23, 42, 0.8);
+            border-bottom: 1px solid #334155;
+            z-index: 10;
+        }
+        .ui-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .ui-text {
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 2px 0;
+        }
+        #hp-display {
+            color: var(--green);
+            font-size: 1.2rem;
+        }
+
+        /* 游戏画布区域 */
+        #canvas-wrapper {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            overflow: hidden;
         }
         canvas {
-            flex: 1;
             display: block;
             width: 100%;
             height: 100%;
         }
-        #ui-overlay {
+
+        /* 进度条 */
+        .progress-bar {
             position: absolute;
-            top: 20px;
+            bottom: 0;
             left: 0;
-            right: 0;
-            pointer-events: none;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 20px;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
             z-index: 5;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
-        .ui-text {
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        #hp-display {
-            color: var(--green);
-            margin-top: 5px;
+        #progress-fill { 
+            width: 0%; 
+            height: 100%; 
+            background: #3b82f6;
+            transition: width 0.3s;
         }
 
+        /* 底部控制按钮 */
         #mobile-controls {
             display: flex;
             width: 100%;
-            height: 100px;
+            height: 120px;
             background: #020617;
             border-top: 2px solid #334155;
         }
@@ -74,109 +108,92 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.3rem;
+            font-size: 1.5rem;
             color: white;
             -webkit-user-select: none;
             user-select: none;
             cursor: pointer;
             font-weight: bold;
+            border: 1px solid rgba(255,255,255,0.05);
         }
         .control-btn:active {
             background: #1e293b;
         }
 
+        /* 弹窗样式 */
         #message-box {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(15, 23, 42, 0.98);
-            border: 3px solid white;
-            padding: 30px 20px;
+            border: 2px solid white;
+            padding: 25px;
             text-align: center;
             display: none;
             z-index: 100;
-            width: 80%;
+            width: 85%;
             max-height: 80vh;
             overflow-y: auto;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            border-radius: 12px;
         }
         button {
             background: white;
             color: black;
             border: none;
-            padding: 12px 30px;
-            font-size: 1.1rem;
+            padding: 12px 25px;
+            font-size: 1rem;
             cursor: pointer;
             font-weight: bold;
-            font-family: inherit;
+            border-radius: 6px;
             margin-top: 15px;
         }
-        button:active { background: #cbd5e1; }
-
+        
         #leaderboard {
             margin-top: 20px;
             text-align: left;
-            font-size: 0.9rem;
             border-top: 1px solid #475569;
             padding-top: 15px;
         }
         .leaderboard-item {
             display: flex;
             justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        #name-input-container {
-            margin: 15px 0;
-            display: none;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.9rem;
         }
         input {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             box-sizing: border-box;
-            background: #0f172a;
+            background: #1e293b;
             border: 1px solid #475569;
             color: white;
             text-align: center;
-            margin-bottom: 10px;
-            font-size: 1rem;
-        }
-
-        .progress-bar {
-            position: absolute;
-            bottom: 110px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            height: 8px;
-            background: rgba(255,255,255,0.1);
-        }
-        #progress-fill { 
-            width: 0%; 
-            height: 100%; 
-            background: #3b82f6;
-            transition: width 0.3s;
+            margin: 10px 0;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="ui-overlay">
-        <div>
+    <div id="ui-header">
+        <div class="ui-group">
             <div class="ui-text">当前关卡: <span id="level-val">1</span></div>
             <div id="hp-display" class="ui-text">HP: <span id="hp-val">3</span></div>
         </div>
-        <div style="text-align: right">
-            <div class="ui-text">剩余波数: <span id="waves-val">10</span></div>
+        <div class="ui-group" style="text-align: right">
+            <div class="ui-text">剩余波数</div>
+            <div class="ui-text" style="font-size: 1.5rem; color: var(--finish);" id="waves-val">10</div>
         </div>
     </div>
 
-    <canvas id="gameCanvas"></canvas>
-
-    <div class="progress-bar">
-        <div id="progress-fill"></div>
+    <div id="canvas-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        <div class="progress-bar">
+            <div id="progress-fill"></div>
+        </div>
     </div>
 
     <div id="mobile-controls">
@@ -185,12 +202,12 @@
     </div>
 
     <div id="message-box">
-        <h1 id="msg-title" style="margin:0; letter-spacing: 2px;">躲避球冲刺</h1>
-        <p id="msg-body" style="margin-top:10px; color: #94a3b8;">躲避红色和黄色，收集绿色！</p>
+        <h1 id="msg-title" style="margin:0;">躲避球冲刺</h1>
+        <p id="msg-body" style="color: #94a3b8; margin: 15px 0;">左右移动，生存到最后！</p>
         
-        <div id="name-input-container">
-            <p style="color: var(--finish)">恭喜通关！请输入你的名字：</p>
-            <input type="text" id="player-name" maxlength="10" placeholder="你的大名">
+        <div id="name-input-container" style="display: none;">
+            <p style="color: var(--finish)">恭喜通关！请留下你的大名：</p>
+            <input type="text" id="player-name" maxlength="8" placeholder="你的名字">
             <button id="submit-score-btn">提交成绩</button>
         </div>
 
@@ -199,8 +216,8 @@
         </div>
 
         <div id="leaderboard">
-            <h3 style="margin: 0 0 10px 0; text-align: center;">全球排行榜 (Top 10)</h3>
-            <div id="leaderboard-list">正在加载中...</div>
+            <h4 style="margin: 0 0 10px 0; text-align: center;">全球排行榜 (HP 结余)</h4>
+            <div id="leaderboard-list">加载中...</div>
         </div>
     </div>
 </div>
@@ -208,14 +225,14 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Firebase 配置
+    // 初始化 Firebase
     const firebaseConfig = JSON.parse(__firebase_config);
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'dodgeball-dash-hp';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'dodgeball-dash-pro';
 
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -256,18 +273,18 @@
 
     const levelConfigs = [
         { speed: 3.0, waves: 10, spawnInterval: 480 },
-        { speed: 3.6, waves: 15, spawnInterval: 470 },
-        { speed: 4.2, waves: 20, spawnInterval: 460 },
-        { speed: 4.8, waves: 25, spawnInterval: 450 },
-        { speed: 5.4, waves: 30, spawnInterval: 440 },
-        { speed: 6.0, waves: 35, spawnInterval: 430 },
-        { speed: 6.6, waves: 40, spawnInterval: 420 },
-        { speed: 7.2, waves: 45, spawnInterval: 410 },
-        { speed: 7.8, waves: 50, spawnInterval: 400 },
-        { speed: 8.8, waves: 60, spawnInterval: 390 }
+        { speed: 3.5, waves: 15, spawnInterval: 460 },
+        { speed: 4.0, waves: 20, spawnInterval: 440 },
+        { speed: 4.5, waves: 25, spawnInterval: 420 },
+        { speed: 5.0, waves: 30, spawnInterval: 400 },
+        { speed: 5.5, waves: 35, spawnInterval: 380 },
+        { speed: 6.0, waves: 40, spawnInterval: 360 },
+        { speed: 6.5, waves: 45, spawnInterval: 340 },
+        { speed: 7.0, waves: 50, spawnInterval: 320 },
+        { speed: 8.5, waves: 60, spawnInterval: 300 }
     ];
 
-    // --- Firebase 认证 ---
+    // --- Firebase Auth & Leaderboard ---
     const initAuth = async () => {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
             await signInWithCustomToken(auth, __initial_auth_token);
@@ -286,29 +303,28 @@
     function loadLeaderboard() {
         if (!user) return;
         const scoresRef = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
-        // 注意：根据 Rule 2，不使用 orderBy，在客户端排序
         onSnapshot(scoresRef, (snapshot) => {
             const scores = [];
             snapshot.forEach(doc => scores.push(doc.data()));
             scores.sort((a, b) => b.score - a.score);
             const top10 = scores.slice(0, 10);
             
-            leaderboardList.innerHTML = top10.length ? '' : '<div style="text-align:center">暂无成绩</div>';
+            leaderboardList.innerHTML = top10.length ? '' : '<div style="text-align:center">暂无数据</div>';
             top10.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'leaderboard-item';
-                div.innerHTML = `<span>${index + 1}. ${item.name || '匿名'}</span><span>${item.score}</span>`;
+                div.innerHTML = `<span>${index + 1}. ${item.name || '匿名'}</span><span>HP: ${item.score}</span>`;
                 leaderboardList.appendChild(div);
             });
         }, (err) => {
-            leaderboardList.innerHTML = '<div style="text-align:center">无法加载排行榜</div>';
+            leaderboardList.innerHTML = '<div style="text-align:center">加载失败</div>';
         });
     }
 
     async function submitScore() {
         if (!user) return;
-        const name = playerNameInput.value.trim() || "匿名玩家";
-        const score = gameState.health; // 以最终剩余HP作为分数
+        const name = playerNameInput.value.trim() || "匿名";
+        const score = gameState.health;
         try {
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), {
                 name,
@@ -318,108 +334,63 @@
             });
             nameInputContainer.style.display = 'none';
             actionButtons.style.display = 'block';
-            msgBody.innerText = "成绩提交成功！";
+            msgBody.innerText = "成绩已提交至排行榜！";
         } catch (e) {
-            msgBody.innerText = "提交失败，请重试。";
+            msgBody.innerText = "提交异常，请检查网络。";
         }
     }
 
     submitScoreBtn.onclick = submitScore;
 
-    // --- 游戏逻辑 ---
+    // --- 游戏引擎 ---
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    function startBGM() {
-        if (bgmInterval) clearInterval(bgmInterval);
-        if (!audioCtx) return;
-        const freqs = [261.63, 329.63, 392.00, 440.00, 523.25];
-        function playNote() {
-            if (!gameState.isRunning) return;
-            const freq = freqs[Math.floor(Math.random() * freqs.length)];
-            const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            g.gain.setValueAtTime(0, audioCtx.currentTime);
-            g.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 0.5);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.0);
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 2.0);
-        }
-        playNote();
-        bgmInterval = setInterval(playNote, 1200);
-    }
-
     function playSound(type) {
         if (!audioCtx) return;
         const now = audioCtx.currentTime;
-        const g = audioCtx.createGain(); 
-        g.connect(audioCtx.destination);
+        const g = audioCtx.createGain(); g.connect(audioCtx.destination);
         const osc = audioCtx.createOscillator();
         if (type === 'red') {
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(120, now);
-            g.gain.setValueAtTime(0.3, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-            osc.start(); osc.stop(now + 0.3);
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now);
+            g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.start(); osc.stop(now + 0.2);
         } else if (type === 'yellow') {
-            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.setValueAtTime(250, now);
             g.gain.setValueAtTime(0.1, now); g.gain.linearRampToValueAtTime(0, now + 0.1);
             osc.start(); osc.stop(now + 0.1);
         } else if (type === 'green') {
-            osc.frequency.setValueAtTime(500, now);
-            g.gain.setValueAtTime(0.2, now); g.gain.linearRampToValueAtTime(0, now + 0.15);
-            osc.start(); osc.stop(now + 0.15);
+            osc.frequency.setValueAtTime(600, now);
+            g.gain.setValueAtTime(0.15, now); g.gain.linearRampToValueAtTime(0, now + 0.1);
+            osc.start(); osc.stop(now + 0.1);
         }
         osc.connect(g);
     }
 
-    function moveLeft() { if (gameState.playerLane > 0) gameState.playerLane--; }
-    function moveRight() { if (gameState.playerLane < TOTAL_LANES - 1) gameState.playerLane++; }
-
-    document.getElementById('btn-left').onpointerdown = (e) => { e.preventDefault(); initAudio(); moveLeft(); };
-    document.getElementById('btn-right').onpointerdown = (e) => { e.preventDefault(); initAudio(); moveRight(); };
-
-    window.addEventListener('keydown', (e) => {
-        if (!gameState.isRunning) return;
-        initAudio();
-        if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') moveLeft();
-        else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') moveRight();
-    });
-
-    function updateHP() {
-        hpValDisplay.innerText = gameState.health;
-        if (gameState.health <= 1) {
-            hpContainer.style.color = 'var(--red)';
-        } else if (gameState.health <= 2) {
-            hpContainer.style.color = 'var(--yellow)';
-        } else {
-            hpContainer.style.color = 'var(--green)';
-        }
-    }
-
     function resize() { 
-        canvas.width = canvas.clientWidth; 
-        canvas.height = canvas.clientHeight; 
+        const wrapper = document.getElementById('canvas-wrapper');
+        canvas.width = wrapper.clientWidth; 
+        canvas.height = wrapper.clientHeight; 
     }
     window.addEventListener('resize', resize);
     resize();
 
     function spawnWave() {
         if (gameState.wavesSpawned >= gameState.totalWaves) return;
-        let count = (gameState.level < 4) ? 5 : (gameState.level < 9 ? 6 : 7);
-        const shuffled = Array.from({length: TOTAL_LANES}, (_, i) => i).sort(() => Math.random() - 0.5);
-        shuffled.slice(0, count).forEach(lane => {
+        let count = (gameState.level < 4) ? 4 : (gameState.level < 8 ? 5 : 6);
+        const lanes = Array.from({length: TOTAL_LANES}, (_, i) => i).sort(() => Math.random() - 0.5);
+        lanes.slice(0, count).forEach(lane => {
             const r = Math.random();
             let type = 'red';
-            if (r > 0.82) type = 'green';
-            else if (r > 0.65) type = 'yellow';
-            gameState.obstacles.push({ lane, y: -50, type });
+            if (r > 0.85) type = 'green';
+            else if (r > 0.7) type = 'yellow';
+            gameState.obstacles.push({ lane, y: -40, type });
         });
         gameState.wavesSpawned++;
         wavesDisplay.innerText = gameState.totalWaves - gameState.wavesSpawned;
-        if (gameState.wavesSpawned === gameState.totalWaves) gameState.finishLineY = -1000;
+        if (gameState.wavesSpawned === gameState.totalWaves) gameState.finishLineY = -1200;
     }
 
     function update() {
@@ -429,59 +400,81 @@
             if (lastY > gameState.spawnInterval) spawnWave();
         }
         const laneW = canvas.width / TOTAL_LANES;
-        const playerX = (gameState.playerLane + 0.5) * laneW;
-        const playerY = canvas.height * 0.85;
+        const px = (gameState.playerLane + 0.5) * laneW;
+        const py = canvas.height * 0.88;
 
         for (let i = gameState.obstacles.length - 1; i >= 0; i--) {
             const o = gameState.obstacles[i];
             o.y += gameState.speed;
             const ox = (o.lane + 0.5) * laneW;
-            if (Math.hypot(playerX-ox, playerY-o.y) < 26) { 
+            if (Math.hypot(px-ox, py-o.y) < 25) { 
                 playSound(o.type);
-                if (o.type === 'red') { gameState.health -= 3; gameState.shake = 15; }
-                else if (o.type === 'yellow') { gameState.health -= 1; gameState.shake = 8; }
+                if (o.type === 'red') { gameState.health -= 3; gameState.shake = 12; }
+                else if (o.type === 'yellow') { gameState.health -= 1; gameState.shake = 6; }
                 else { gameState.health += 1; }
                 gameState.obstacles.splice(i, 1);
-                updateHP();
+                updateHPUI();
                 if (gameState.health <= 0) { gameOver(); return; }
                 continue;
             }
-            if (o.y > canvas.height + 100) gameState.obstacles.splice(i, 1);
+            if (o.y > canvas.height + 50) gameState.obstacles.splice(i, 1);
         }
+
         if (gameState.wavesSpawned === gameState.totalWaves) {
             gameState.finishLineY += gameState.speed;
-            if (gameState.finishLineY > playerY) levelComplete();
+            if (gameState.finishLineY > py) levelComplete();
         }
         progressFill.style.width = (gameState.wavesSpawned / gameState.totalWaves * 100) + '%';
+    }
+
+    function updateHPUI() {
+        hpValDisplay.innerText = gameState.health;
+        if (gameState.health <= 1) hpContainer.style.color = 'var(--red)';
+        else if (gameState.health <= 2) hpContainer.style.color = 'var(--yellow)';
+        else hpContainer.style.color = 'var(--green)';
     }
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const laneW = canvas.width / TOTAL_LANES;
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        
+        // 绘制轨道线
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
         for(let i=1; i<TOTAL_LANES; i++) {
             ctx.beginPath(); ctx.moveTo(i*laneW, 0); ctx.lineTo(i*laneW, canvas.height); ctx.stroke();
         }
+
+        // 终点线
         if (gameState.wavesSpawned === gameState.totalWaves) {
-            ctx.fillStyle = 'var(--finish)'; ctx.fillRect(0, gameState.finishLineY, canvas.width, 25);
+            ctx.fillStyle = 'var(--finish)';
+            ctx.fillRect(0, gameState.finishLineY, canvas.width, 15);
         }
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath(); ctx.arc((gameState.playerLane + 0.5) * laneW, canvas.height * 0.85, 16, 0, Math.PI*2); ctx.fill();
+
+        // 玩家
+        ctx.fillStyle = "#fff";
+        ctx.shadowBlur = 10; ctx.shadowColor = "#fff";
+        ctx.beginPath(); ctx.arc((gameState.playerLane + 0.5) * laneW, canvas.height * 0.88, 14, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // 障碍物
         gameState.obstacles.forEach(o => {
-            ctx.fillStyle = o.type === 'red' ? '#ff4444' : (o.type === 'yellow' ? '#ffb700' : '#22c55e');
-            ctx.beginPath(); ctx.arc((o.lane+0.5)*laneW, o.y, 16, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = o.type === 'red' ? 'var(--red)' : (o.type === 'yellow' ? 'var(--yellow)' : 'var(--green)');
+            ctx.beginPath(); ctx.arc((o.lane+0.5)*laneW, o.y, 14, 0, Math.PI*2); ctx.fill();
         });
+
+        // 震动效果
         if (gameState.shake > 0) {
             const s = (Math.random()-0.5)*gameState.shake;
             canvas.style.transform = `translate(${s}px, ${s}px)`;
-            gameState.shake *= 0.9;
+            gameState.shake *= 0.85;
         } else canvas.style.transform = 'none';
     }
 
     function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
 
     function initLevel(lvl, keepHealth = false) {
-        initAudio(); 
+        initAudio();
+        resize();
         const config = levelConfigs[lvl - 1] || levelConfigs[0];
         gameState.level = lvl;
         if (!keepHealth) gameState.health = (lvl === 1) ? 3 : gameState.levelStartHealth;
@@ -493,42 +486,54 @@
         gameState.obstacles = [];
         gameState.finishLineY = -2000;
         gameState.isRunning = true;
+        
         levelDisplay.innerText = lvl;
         wavesDisplay.innerText = config.waves;
-        updateHP();
+        updateHPUI();
         messageBox.style.display = 'none';
         nameInputContainer.style.display = 'none';
         actionButtons.style.display = 'block';
-        startBGM();
     }
 
     function gameOver() {
-        gameState.isRunning = false; if(bgmInterval) clearInterval(bgmInterval);
-        msgTitle.innerText = "游戏结束"; msgTitle.style.color = "var(--red)";
-        msgBody.innerText = `你在第 ${gameState.level} 关失败了。`;
-        msgBtn.innerText = "再试一次";
+        gameState.isRunning = false;
+        msgTitle.innerText = "任务失败"; msgTitle.style.color = "var(--red)";
+        msgBody.innerText = `在第 ${gameState.level} 关陨落了。`;
+        msgBtn.innerText = "重整旗鼓";
         messageBox.style.display = 'block';
         msgBtn.onclick = () => initLevel(1, false);
     }
 
     function levelComplete() {
-        gameState.isRunning = false; if(bgmInterval) clearInterval(bgmInterval);
+        gameState.isRunning = false;
         if (gameState.level < 10) {
-            msgTitle.innerText = "挑战成功！"; msgTitle.style.color = "var(--green)";
-            msgBody.innerText = `准备好进入第 ${gameState.level + 1} 关了吗？`;
+            msgTitle.innerText = "关卡突破！"; msgTitle.style.color = "var(--green)";
+            msgBody.innerText = `下一关：第 ${gameState.level + 1} 关`;
             msgBtn.innerText = "进入下一关";
             messageBox.style.display = 'block';
             msgBtn.onclick = () => initLevel(gameState.level + 1, true);
         } else {
-            msgTitle.innerText = "全关挑战达成！"; msgTitle.style.color = "var(--finish)";
-            msgBody.innerText = `你以 ${gameState.health} 点血量完赛！`;
+            msgTitle.innerText = "传奇诞生！"; msgTitle.style.color = "var(--finish)";
+            msgBody.innerText = `你完成了全部挑战！剩余HP：${gameState.health}`;
             nameInputContainer.style.display = 'block';
             actionButtons.style.display = 'none';
             messageBox.style.display = 'block';
-            msgBtn.innerText = "重新开始";
+            msgBtn.innerText = "再玩一遍";
             msgBtn.onclick = () => initLevel(1, false);
         }
     }
+
+    // 控制响应
+    const moveL = (e) => { e.preventDefault(); initAudio(); if (gameState.playerLane > 0) gameState.playerLane--; };
+    const moveR = (e) => { e.preventDefault(); initAudio(); if (gameState.playerLane < TOTAL_LANES - 1) gameState.playerLane++; };
+    
+    document.getElementById('btn-left').onpointerdown = moveL;
+    document.getElementById('btn-right').onpointerdown = moveR;
+    window.onkeydown = (e) => {
+        if (!gameState.isRunning) return;
+        if (e.key === 'ArrowLeft' || e.key === 'a') moveL(e);
+        if (e.key === 'ArrowRight' || e.key === 'd') moveR(e);
+    };
 
     msgBtn.onclick = () => initLevel(1, false);
     messageBox.style.display = 'block';
