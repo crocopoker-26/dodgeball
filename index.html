@@ -64,7 +64,7 @@
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp, query, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // --- 这里的配置已经根据你的截图更新完毕 ---
+    // Firebase 配置
     const firebaseConfig = {
         apiKey: "AIzaSyDNNJIp1Gq0FUx3KANjZs06XL-riomGyDI",
         authDomain: "dodgeball-e6c6d.firebaseapp.com",
@@ -98,9 +98,23 @@
     let user = null;
     let gameState = { level: 1, playerLane: 4, health: 3, isRunning: false, obstacles: [], wavesSpawned: 0, totalWaves: 5, speed: 3 };
 
-    // 匿名登录并实时同步排行榜
-    signInAnonymously(auth).then(u => {
-        user = u.user;
+    // 匿名登录函数：增加了错误处理和指引
+    async function initFirebase() {
+        try {
+            const u = await signInAnonymously(auth);
+            user = u.user;
+            setupLeaderboardListener();
+        } catch (err) {
+            console.error("Firebase 登录失败:", err);
+            if (err.code === 'auth/admin-restricted-operation') {
+                leaderboardList.innerHTML = "<span style='color:#f87171'>错误：请在 Firebase 控制台开启 'Anonymous' 登录方式</span>";
+            } else {
+                leaderboardList.innerHTML = "连接失败，请检查网络";
+            }
+        }
+    }
+
+    function setupLeaderboardListener() {
         const q = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
         onSnapshot(q, (snap) => {
             const data = [];
@@ -109,12 +123,18 @@
             leaderboardList.innerHTML = data.slice(0, 5).map((s, i) => 
                 `<div class="leaderboard-item"><span>${i+1}. ${s.name}</span><span>${s.score}分</span></div>`).join('') || "暂无记录";
         }, (err) => {
-            console.error("排行榜加载失败:", err);
-            leaderboardList.innerHTML = "无权限(请检查数据库Rules)";
+            console.error("数据同步失败:", err);
+            leaderboardList.innerHTML = "排行榜权限受阻";
         });
-    });
+    }
+
+    initFirebase();
 
     submitBtn.onclick = async () => {
+        if (!user) {
+            msgBody.innerText = "未登录，无法提交";
+            return;
+        }
         const name = playerNameInput.value.trim() || "无名氏";
         try {
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), {
@@ -123,12 +143,21 @@
             nameInputContainer.style.display = 'none';
             msgBody.innerText = "成绩已提交！";
         } catch (e) {
-            msgBody.innerText = "提交失败，请检查数据库规则。";
+            msgBody.innerText = "提交失败，请检查数据库 Rules";
         }
     };
 
     function resize() { canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
     window.onresize = resize; resize();
+
+    function moveLeft() { if(gameState.playerLane > 0) gameState.playerLane--; }
+    function moveRight() { if(gameState.playerLane < 9) gameState.playerLane++; }
+
+    window.addEventListener('keydown', (e) => {
+        if (!gameState.isRunning) return;
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moveLeft();
+        else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moveRight();
+    });
 
     function spawn() {
         if (gameState.wavesSpawned >= gameState.totalWaves) return;
@@ -205,8 +234,9 @@
     }
 
     msgBtn.onclick = () => start(gameState.level);
-    document.getElementById('btn-left').onpointerdown = () => { if(gameState.playerLane > 0) gameState.playerLane--; };
-    document.getElementById('btn-right').onpointerdown = () => { if(gameState.playerLane < 9) gameState.playerLane++; };
+    document.getElementById('btn-left').onpointerdown = moveLeft;
+    document.getElementById('btn-right').onpointerdown = moveRight;
+    
     messageBox.style.display = 'block'; draw();
 </script>
 </body>
