@@ -3,167 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>躲避球冲刺 - 10关挑战</title>
+    <title>躲避球冲刺 - 关卡分值动态显示版</title>
     <style>
         :root {
             --bg: #0f172a;    
-            --finish: #ffffff;
             --red: #ff4444;    
             --yellow: #ffb700; 
             --green: #22c55e;  
             --blue: #3b82f6;
+            --purple: #a855f7;
+            --cyan: #22d3ee;
         }
         body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
+            margin: 0; padding: 0; overflow: hidden;
             background-color: var(--bg);
-            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            touch-action: none;
+            font-family: "Microsoft YaHei", sans-serif;
+            color: white; display: flex; justify-content: center; align-items: center; height: 100vh;
+            touch-action: none; outline: none;
         }
         #game-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            max-width: 600px;
-            background: #111827;
-            display: flex;
-            flex-direction: column;
-            border: 2px solid #334155;
+            position: relative; width: 100%; height: 100%; max-width: 600px;
+            background: #111827; display: flex; flex-direction: column; border: 2px solid #334155;
         }
-        canvas {
-            flex: 1;
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+        canvas { flex: 1; display: block; width: 100%; height: 100%; cursor: crosshair; }
         #ui-overlay {
-            position: absolute;
-            top: 20px;
-            left: 0;
-            right: 0;
-            pointer-events: none;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 20px;
-            z-index: 5;
+            position: absolute; top: 20px; left: 0; right: 0; pointer-events: none;
+            display: flex; justify-content: space-between; padding: 0 20px; z-index: 5;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
-        .ui-text {
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
-        #hp-display {
-            color: var(--green);
-            margin-top: 5px;
-        }
-
+        .ui-text { font-size: 1.1rem; font-weight: bold; }
+        #score-display { font-size: 1.6rem; color: var(--cyan); margin-top: 5px; }
         #mobile-controls {
-            display: flex;
-            width: 100%;
-            height: 100px;
-            background: #020617;
-            border-top: 2px solid #334155;
+            display: flex; width: 100%; height: 100px; background: #020617; border-top: 2px solid #334155;
         }
         .control-btn {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.3rem;
-            color: white;
-            -webkit-user-select: none;
-            user-select: none;
-            cursor: pointer;
-            font-weight: bold;
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            font-size: 1.3rem; color: white; user-select: none; cursor: pointer; font-weight: bold;
         }
-        .control-btn:active {
-            background: #1e293b;
-        }
-
+        .control-btn:active { background: #1e293b; }
         #message-box {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(15, 23, 42, 0.98);
-            border: 3px solid white;
-            padding: 40px 20px;
-            text-align: center;
-            display: none;
-            z-index: 100;
-            width: 80%;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            border-radius: 12px;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.98); border: 3px solid white; padding: 30px 20px;
+            text-align: center; display: none; z-index: 100; width: 85%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8); border-radius: 12px;
         }
-        #msg-progress-tag {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 0.9rem;
-            color: #94a3b8;
-            font-weight: bold;
+        .rule-item { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 8px 0; }
+        .dot { width: 14px; height: 14px; border-radius: 50%; }
+        .debug-panel {
+            margin-top: 15px; padding: 10px; border-top: 1px dashed #475569;
+            pointer-events: auto; background: rgba(255,255,255,0.05); border-radius: 8px; display: none;
         }
-        #msg-title {
-            margin: 0;
-            font-size: 2.2rem;
-            letter-spacing: 2px;
-            color: var(--blue);
-        }
-        #msg-body {
-            margin: 20px 0;
-            font-size: 1.1rem;
-            line-height: 1.6;
-            color: #94a3b8;
-        }
-        .rule-item {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin: 5px 0;
-            font-size: 0.95rem;
-        }
-        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; align-items: center; }
         button {
-            background: white;
-            color: black;
-            border: none;
-            padding: 15px 45px;
-            font-size: 1.3rem;
-            cursor: pointer;
-            font-weight: bold;
-            font-family: inherit;
-            border-radius: 8px;
-            transition: transform 0.1s;
+            background: white; color: black; border: none; padding: 12px 30px;
+            font-size: 1.1rem; cursor: pointer; font-weight: bold; border-radius: 8px; width: 80%;
         }
-        button:active { 
-            background: #cbd5e1;
-            transform: scale(0.95);
-        }
-
         .progress-bar {
-            position: absolute;
-            bottom: 110px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            height: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            overflow: hidden;
+            position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%);
+            width: 90%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;
         }
-        #progress-fill { 
-            width: 0%; 
-            height: 100%; 
-            background: var(--blue);
-            transition: width 0.3s ease-out;
-        }
+        #progress-fill { width: 0%; height: 100%; background: var(--blue); }
     </style>
 </head>
 <body>
@@ -171,19 +70,17 @@
 <div id="game-container">
     <div id="ui-overlay">
         <div>
-            <div class="ui-text">进度: <span id="level-val">1</span> / 10</div>
-            <div id="hp-display" class="ui-text">HP: <span id="hp-val">3</span></div>
+            <div class="ui-text">第 <span id="level-val">1</span> 关</div>
+            <div id="score-display" class="ui-text">得分: <span id="score-val">3</span></div>
         </div>
         <div style="text-align: right">
-            <div class="ui-text">剩余波数: <span id="waves-val">10</span></div>
+            <div class="ui-text">剩余波数: <span id="waves-val">0</span></div>
         </div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
-    <div class="progress-bar">
-        <div id="progress-fill"></div>
-    </div>
+    <div class="progress-bar"><div id="progress-fill"></div></div>
 
     <div id="mobile-controls">
         <div class="control-btn" id="btn-left">左 移</div>
@@ -191,312 +88,378 @@
     </div>
 
     <div id="message-box">
-        <div id="msg-progress-tag"></div>
-        <h1 id="msg-title">第 1 / 10 关</h1>
+        <h1 id="msg-title">躲避球冲刺</h1>
         <div id="msg-body"></div>
-        <button id="msg-btn">开始挑战</button>
+        
+        <div class="debug-panel" id="debug-ui">
+            <div style="color: cyan; margin-bottom: 5px;">开发者工具 (H 键切换)</div>
+            <input type="checkbox" id="god-mode-toggle"> <label for="god-mode-toggle">无敌模式</label>
+            <div style="margin-top:10px;">
+                <span id="slider-val">起始关卡: 第 1 关</span><br>
+                <input type="range" id="level-slider" min="1" max="15" value="1" style="width:100%">
+            </div>
+        </div>
+        <div class="btn-group" id="msg-btn-container"></div>
     </div>
 </div>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const levelDisplay = document.getElementById('level-val');
-    const wavesDisplay = document.getElementById('waves-val');
-    const progressFill = document.getElementById('progress-fill');
-    const hpValDisplay = document.getElementById('hp-val');
-    const hpContainer = document.getElementById('hp-display');
-    const messageBox = document.getElementById('message-box');
-    const msgTitle = document.getElementById('msg-title');
-    const msgBody = document.getElementById('msg-body');
-    const msgBtn = document.getElementById('msg-btn');
-    const msgProgressTag = document.getElementById('msg-progress-tag');
-
-    let audioCtx = null;
-    let bgmInterval = null;
-    const TOTAL_LANES = 10;
+    // --- 音效引擎 ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     
-    let gameState = {
-        level: 1,
-        playerLane: 4, 
-        health: 3, 
-        levelStartHealth: 3,
-        speed: 2.2,
-        isRunning: false,
-        obstacles: [],
-        spawnInterval: 500, 
-        wavesSpawned: 0,
-        totalWaves: 10,
-        finishLineY: -2000,
-        shake: 0
+    function playTone({ freq, type, duration, vol = 0.1, slideTo = null, decay = true }) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        if (slideTo !== null) {
+            osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+        }
+        
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(vol, now + 0.01); 
+        if (decay) {
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        } else {
+            gain.gain.linearRampToValueAtTime(0, now + duration);
+        }
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start();
+        osc.stop(now + duration + 0.05);
+    }
+
+    const sounds = {
+        scoreGreen: () => playTone({ freq: 880, type: 'sine', duration: 0.15, vol: 0.08 }),
+        scoreBlue: () => {
+            playTone({ freq: 1046, type: 'sine', duration: 0.1, vol: 0.07 });
+            setTimeout(() => playTone({ freq: 1568, type: 'sine', duration: 0.2, vol: 0.05 }), 60);
+        },
+        hitYellow: () => playTone({ freq: 150, type: 'sawtooth', duration: 0.25, vol: 0.15, slideTo: 40 }),
+        hitRed: () => {
+            playTone({ freq: 90, type: 'square', duration: 0.45, vol: 0.2, slideTo: 20 });
+            setTimeout(() => playTone({ freq: 50, type: 'sine', duration: 0.3, vol: 0.15, slideTo: 10 }), 30);
+        },
+        shieldUp: () => {
+            [523, 659, 783, 1046].forEach((f, i) => {
+                setTimeout(() => playTone({ freq: f, type: 'sine', duration: 0.5, vol: 0.04 }), i * 80);
+            });
+        },
+        shieldBlock: () => {
+            playTone({ freq: 2000, type: 'sine', duration: 0.08, vol: 0.12, slideTo: 1200, decay: false });
+        },
+        win: () => {
+            const melody = [523, 523, 659, 783, 1046];
+            melody.forEach((f, i) => {
+                setTimeout(() => playTone({ freq: f, type: 'triangle', duration: 0.4, vol: 0.06 }), i * 110);
+            });
+        }
     };
 
-    const levelConfigs = [
-        { speed: 3.5, waves: 8, spawnInterval: 480 },
-        { speed: 4.0, waves: 12, spawnInterval: 470 },
-        { speed: 4.6, waves: 16, spawnInterval: 460 },
-        { speed: 5.2, waves: 20, spawnInterval: 450 },
-        { speed: 5.8, waves: 25, spawnInterval: 440 },
-        { speed: 6.4, waves: 30, spawnInterval: 430 },
-        { speed: 7.0, waves: 35, spawnInterval: 420 },
-        { speed: 7.6, waves: 40, spawnInterval: 410 },
-        { speed: 8.2, waves: 45, spawnInterval: 400 },
-        { speed: 9.0, waves: 50, spawnInterval: 380 }
-    ];
+    // --- 游戏配置 ---
+    const MAX_LEVELS = 15;
+    const LEVEL_SPEEDS = [3.5, 3.8, 4.2, 4.8, 5.5, 6.2, 7, 7.5, 8, 8.5, 7, 7.5, 8, 8.5, 9];
+    const LEVEL_WAVES = [5, 8, 12, 15, 20, 25, 30, 40, 50, 65, 20, 30, 45, 60, 80];
+    const LEVEL_SPAWNS = [400, 400, 400, 400, 400, 380, 360, 340, 320, 300, 350, 350, 350, 350, 350];
 
-    function initAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-    }
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreValDisplay = document.getElementById('score-val');
+    const scoreDisplayContainer = document.getElementById('score-display');
+    const messageBox = document.getElementById('message-box');
+    const msgBtnContainer = document.getElementById('msg-btn-container');
 
-    function startBGM() {
-        if (bgmInterval) clearInterval(bgmInterval);
-        if (!audioCtx) return;
+    const TOTAL_LANES = 10;
+    let gameState = {
+        level: 1, playerLane: 4, score: 3, shieldCount: 0,
+        isRunning: false, obstacles: [], wavesSpawned: 0, totalWaves: 5,
+        finishLineY: -2000, shake: 0, isGodMode: false, devModeVisible: false,
+        shieldRotation: 0 
+    };
+
+    function updateUI() {
+        scoreValDisplay.innerText = gameState.isGodMode ? `${gameState.score} (无敌)` : gameState.score;
+        document.getElementById('level-val').innerText = gameState.level;
+        document.getElementById('waves-val').innerText = Math.max(0, gameState.totalWaves - gameState.wavesSpawned);
         
-        const freqs = [261.63, 329.63, 392.00, 440.00, 523.25];
-        function playNote() {
-            if (!gameState.isRunning) return;
-            const freq = freqs[Math.floor(Math.random() * freqs.length)];
-            const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            g.gain.setValueAtTime(0, audioCtx.currentTime);
-            g.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 0.5);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.0);
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 2.0);
-        }
-        playNote();
-        bgmInterval = setInterval(playNote, 1200);
-    }
-
-    function playSound(type) {
-        if (!audioCtx) return;
-        const now = audioCtx.currentTime;
-        const g = audioCtx.createGain(); 
-        g.connect(audioCtx.destination);
-        const osc = audioCtx.createOscillator();
-        
-        if (type === 'red') {
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(120, now);
-            g.gain.setValueAtTime(0.3, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-            osc.start(); osc.stop(now + 0.3);
-        } else if (type === 'yellow') {
-            osc.frequency.setValueAtTime(300, now);
-            g.gain.setValueAtTime(0.1, now); g.gain.linearRampToValueAtTime(0, now + 0.1);
-            osc.start(); osc.stop(now + 0.1);
-        } else if (type === 'green') {
-            osc.frequency.setValueAtTime(500, now);
-            g.gain.setValueAtTime(0.2, now); g.gain.linearRampToValueAtTime(0, now + 0.15);
-            osc.start(); osc.stop(now + 0.15);
-        }
-        osc.connect(g);
-    }
-
-    function moveLeft() { if (gameState.playerLane > 0) gameState.playerLane--; }
-    function moveRight() { if (gameState.playerLane < TOTAL_LANES - 1) gameState.playerLane++; }
-
-    document.getElementById('btn-left').onpointerdown = (e) => { e.preventDefault(); initAudio(); moveLeft(); };
-    document.getElementById('btn-right').onpointerdown = (e) => { e.preventDefault(); initAudio(); moveRight(); };
-
-    window.addEventListener('keydown', (e) => {
-        if (!gameState.isRunning) return;
-        initAudio();
-        if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') moveLeft();
-        else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') moveRight();
-    });
-
-    function updateHP() {
-        hpValDisplay.innerText = gameState.health;
-        if (gameState.health <= 1) {
-            hpContainer.style.color = 'var(--red)';
-        } else if (gameState.health <= 2) {
-            hpContainer.style.color = 'var(--yellow)';
+        if (gameState.isGodMode) {
+            scoreDisplayContainer.style.color = 'var(--cyan)';
         } else {
-            hpContainer.style.color = 'var(--green)';
+            scoreDisplayContainer.style.color = gameState.score <= 0 ? 'var(--red)' : 'var(--cyan)';
         }
     }
-
-    function resize() { 
-        canvas.width = canvas.clientWidth; 
-        canvas.height = canvas.clientHeight; 
-    }
-    window.addEventListener('resize', resize);
-    resize();
 
     function spawnWave() {
         if (gameState.wavesSpawned >= gameState.totalWaves) return;
-        let count = (gameState.level < 4) ? 5 : (gameState.level < 9 ? 6 : 7);
+        
+        let count = 5;
+        if (gameState.level >= 9) count = 7;
+        else if (gameState.level >= 4) count = 6;
 
         const shuffled = Array.from({length: TOTAL_LANES}, (_, i) => i).sort(() => Math.random() - 0.5);
         shuffled.slice(0, count).forEach(lane => {
-            const r = Math.random();
             let type = 'red';
-            if (r > 0.85) type = 'green';
-            else if (r > 0.65) type = 'yellow';
+            const r = Math.random();
+            
+            if (gameState.level >= 11) {
+                if (r < 0.65) type = 'red';          
+                else if (r < 0.85) type = 'yellow';  
+                else if (r < 0.94) type = 'green';   
+                else if (r < 0.99) type = 'blue';    
+                else type = 'purple';                
+            } else {
+                if (r < 0.60) type = 'red';          
+                else if (r < 0.80) type = 'yellow';  
+                else type = 'green';                 
+            }
             gameState.obstacles.push({ lane, y: -50, type });
         });
         gameState.wavesSpawned++;
-        wavesDisplay.innerText = gameState.totalWaves - gameState.wavesSpawned;
-        // 终点线距离设定
         if (gameState.wavesSpawned === gameState.totalWaves) gameState.finishLineY = -400;
+        updateUI();
     }
 
     function update() {
         if (!gameState.isRunning) return;
+        
+        if (gameState.shieldCount > 0) {
+            gameState.shieldRotation += 0.05;
+        }
+
         if (gameState.wavesSpawned < gameState.totalWaves) {
             const lastY = gameState.obstacles.length > 0 ? Math.min(...gameState.obstacles.map(o => o.y)) : 1000;
-            if (lastY > gameState.spawnInterval) spawnWave();
+            if (lastY > LEVEL_SPAWNS[gameState.level-1]) spawnWave();
         }
-        const laneW = canvas.width / TOTAL_LANES;
-        const playerX = (gameState.playerLane + 0.5) * laneW;
-        const playerY = canvas.height * 0.85;
+        
+        const px = (gameState.playerLane + 0.5) * (canvas.width / TOTAL_LANES);
+        const py = canvas.height * 0.85;
 
         for (let i = gameState.obstacles.length - 1; i >= 0; i--) {
             const o = gameState.obstacles[i];
-            o.y += gameState.speed;
-            const ox = (o.lane + 0.5) * laneW;
-            if (Math.hypot(playerX-ox, playerY-o.y) < 26) { 
-                playSound(o.type);
-                if (o.type === 'red') { gameState.health -= 3; gameState.shake = 15; }
-                else if (o.type === 'yellow') { gameState.health -= 1; gameState.shake = 8; }
-                else { gameState.health += 1; }
+            o.y += LEVEL_SPEEDS[gameState.level-1];
+            const ox = (o.lane + 0.5) * (canvas.width / TOTAL_LANES);
+            
+            if (Math.hypot(px-ox, py-o.y) < 28) { 
+                let scoreChange = 0;
+                let isPenalty = false;
+
+                switch(o.type) {
+                    case 'blue':   scoreChange = 3; sounds.scoreBlue(); break;
+                    case 'green':  scoreChange = 1; sounds.scoreGreen(); break;
+                    case 'yellow': scoreChange = -1; isPenalty = true; break;
+                    case 'red':    scoreChange = -3; isPenalty = true; break;
+                    case 'purple': 
+                        gameState.shieldCount = 3; 
+                        sounds.shieldUp(); 
+                        break;
+                }
+
+                if (isPenalty) {
+                    if (gameState.shieldCount > 0) {
+                        gameState.shieldCount--;
+                        gameState.shake = 5;
+                        sounds.shieldBlock(); 
+                    } else {
+                        gameState.score += scoreChange;
+                        gameState.shake = Math.abs(scoreChange) * 8;
+                        if (o.type === 'red') sounds.hitRed();
+                        else sounds.hitYellow();
+                    }
+                } else if (scoreChange > 0) {
+                    gameState.score += scoreChange;
+                }
+
                 gameState.obstacles.splice(i, 1);
-                updateHP();
-                if (gameState.health <= 0) { gameOver(); return; }
+                updateUI();
+
+                if (!gameState.isGodMode && gameState.score < 0) {
+                    gameState.isRunning = false;
+                    setTimeout(gameOver, 50);
+                    return;
+                }
                 continue;
             }
             if (o.y > canvas.height + 100) gameState.obstacles.splice(i, 1);
         }
+
         if (gameState.wavesSpawned === gameState.totalWaves) {
-            gameState.finishLineY += gameState.speed;
-            if (gameState.finishLineY > playerY) levelComplete();
+            gameState.finishLineY += LEVEL_SPEEDS[gameState.level-1];
+            if (gameState.finishLineY > py) levelComplete();
         }
-        progressFill.style.width = (gameState.wavesSpawned / gameState.totalWaves * 100) + '%';
+        document.getElementById('progress-fill').style.width = (gameState.wavesSpawned / gameState.totalWaves * 100) + '%';
     }
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const laneW = canvas.width / TOTAL_LANES;
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-        for(let i=1; i<TOTAL_LANES; i++) {
-            ctx.beginPath(); ctx.moveTo(i*laneW, 0); ctx.lineTo(i*laneW, canvas.height); ctx.stroke();
-        }
-        // 终点线颜色改为纯白色
+        const px = (gameState.playerLane + 0.5) * laneW;
+        const py = canvas.height * 0.85;
+
         if (gameState.wavesSpawned === gameState.totalWaves) {
-            ctx.fillStyle = '#ffffff'; 
-            ctx.fillRect(0, gameState.finishLineY, canvas.width, 25);
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, gameState.finishLineY, canvas.width, 25);
         }
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath(); ctx.arc((gameState.playerLane + 0.5) * laneW, canvas.height * 0.85, 16, 0, Math.PI*2); ctx.fill();
+
+        if (gameState.shieldCount > 0) {
+            ctx.save();
+            ctx.translate(px, py);
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            const shieldColors = ['rgba(168, 85, 247, 0.4)', 'rgba(168, 85, 247, 0.7)', 'rgba(168, 85, 247, 1)'];
+            for(let i=0; i<gameState.shieldCount; i++){
+                ctx.strokeStyle = shieldColors[i];
+                ctx.beginPath();
+                ctx.arc(0, 0, 24 + i*6, gameState.shieldRotation * (i%2?1:-1), gameState.shieldRotation * (i%2?1:-1) + Math.PI * 1.4);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(px, py, 16, 0, Math.PI*2); ctx.fill();
+
         gameState.obstacles.forEach(o => {
-            ctx.fillStyle = o.type === 'red' ? '#ff4444' : (o.type === 'yellow' ? '#ffb700' : '#22c55e');
+            const colors = { red: '#ff4444', yellow: '#ffb700', green: '#22c55e', blue: '#3b82f6', purple: '#a855f7' };
+            ctx.fillStyle = colors[o.type];
             ctx.beginPath(); ctx.arc((o.lane+0.5)*laneW, o.y, 16, 0, Math.PI*2); ctx.fill();
         });
+
         if (gameState.shake > 0) {
             const s = (Math.random()-0.5)*gameState.shake;
             canvas.style.transform = `translate(${s}px, ${s}px)`;
-            gameState.shake *= 0.9;
+            gameState.shake *= 0.85;
         } else canvas.style.transform = 'none';
     }
 
-    function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+    function gameLoop() { 
+        if (!gameState.isRunning && messageBox.style.display !== 'block') return;
+        update(); draw(); requestAnimationFrame(gameLoop); 
+    }
 
-    function showStartMessage(lvl) {
-        gameState.isRunning = false;
-        messageBox.style.display = 'block';
-        msgProgressTag.innerText = ""; // 初始消息不需要右上角标签
-        msgTitle.innerText = `第 ${lvl} / 10 关`;
-        msgTitle.style.color = "var(--blue)";
+    function startLevel(lvl, godMode, resetAll = false) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        gameState.isRunning = false; 
+        gameState.level = lvl;
+        gameState.isGodMode = godMode;
+        gameState.totalWaves = LEVEL_WAVES[lvl-1];
+        gameState.wavesSpawned = 0;
+        gameState.obstacles = []; 
+        gameState.shieldCount = resetAll ? 0 : gameState.shieldCount; 
+        gameState.finishLineY = -2000;
+        if (resetAll) gameState.score = 3; 
         
+        updateUI();
+        messageBox.style.display = 'none';
+        gameState.isRunning = true;
+        if (!window.loopRunning) {
+            window.loopRunning = true;
+            gameLoop();
+        }
+    }
+
+    function showStartMessage(lvl, isGameOver = false) {
+        gameState.isRunning = false; 
+        messageBox.style.display = 'block';
+        msgBtnContainer.innerHTML = ''; 
+        const msgBody = document.getElementById('msg-body');
+        const msgTitle = document.getElementById('msg-title');
+
+        if (isGameOver) {
+            msgTitle.innerText = "分数耗尽";
+            msgBody.innerHTML = `挑战结束！最终得分: ${gameState.score}`;
+            const btn = document.createElement('button');
+            btn.innerText = "重新开始";
+            btn.onclick = () => showStartMessage(1);
+            msgBtnContainer.appendChild(btn);
+            return;
+        }
+
+        // 设置通用标题
+        msgTitle.innerText = lvl === 1 ? "躲避球冲刺" : `第 ${lvl} 关`;
+
         if (lvl === 1) {
+            // 第 1 关显示基础球规则
             msgBody.innerHTML = `
-                <p>左右滑动或点击按钮控制白球：</p>
-                <div class="rule-item"><div class="dot" style="background:var(--red)"></div> 红色：HP -3 (致命)</div>
-                <div class="rule-item"><div class="dot" style="background:var(--yellow)"></div> 黄色：HP -1</div>
-                <div class="rule-item"><div class="dot" style="background:var(--green)"></div> 绿色：HP +1</div>
+                <div style="margin-bottom:10px;">初始分数: <b>3 分</b></div>
+                <div class="rule-item"><div class="dot" style="background:var(--green)"></div> 绿色：+1分</div>
+                <div class="rule-item"><div class="dot" style="background:var(--yellow)"></div> 黄色：-1分</div>
+                <div class="rule-item"><div class="dot" style="background:var(--red)"></div> 红色：-3分</div>
+            `;
+        } else if (lvl === 11) {
+            // 仅第 11 关显示新球种规则
+            msgTitle.innerText = `解锁新挑战：第 ${lvl} 关`;
+            msgBody.innerHTML = `
+                <div style="margin-bottom:15px; color:var(--cyan); font-weight:bold; font-size:1.1rem;">发现新元素：</div>
+                <div class="rule-item"><div class="dot" style="background:var(--blue)"></div> 蓝色球：+3 分</div>
+                <div class="rule-item"><div class="dot" style="background:var(--purple)"></div> 紫色球：格挡三次伤害 (护盾)</div>
+                <br>
+                <p style="color:var(--red); font-weight:bold;">难度大幅度提升，祝你好运！</p>
             `;
         } else {
-            msgBody.innerText = "难度提升，保持专注！";
+            // 其他所有关卡不显示球种含义
+            msgBody.innerHTML = `<p style="margin: 20px 0; color: #94a3b8;">准备好了吗？点击下方按钮开始本关。</p>`;
         }
-        
-        msgBtn.innerText = "开始挑战";
-        msgBtn.onclick = () => {
-            messageBox.style.display = 'none';
-            gameState.isRunning = true;
-            startBGM();
+
+        const btn = document.createElement('button');
+        btn.innerText = lvl === 1 ? "开始游戏" : "开始挑战";
+        btn.onclick = () => {
+            if (lvl === 1) {
+                const targetLvl = parseInt(document.getElementById('level-slider').value);
+                startLevel(targetLvl, document.getElementById('god-mode-toggle').checked, true);
+            } else {
+                startLevel(lvl, gameState.isGodMode, false);
+            }
         };
+        msgBtnContainer.appendChild(btn);
     }
 
-    function initLevel(lvl, keepHealth = false, autoStart = false) {
-        initAudio(); 
-        const config = levelConfigs[lvl - 1] || levelConfigs[0];
-        gameState.level = lvl;
-        
-        if (!keepHealth) gameState.health = (lvl === 1) ? 3 : gameState.levelStartHealth;
-        gameState.levelStartHealth = gameState.health;
-        gameState.speed = config.speed;
-        gameState.totalWaves = config.waves;
-        gameState.spawnInterval = config.spawnInterval;
-        gameState.wavesSpawned = 0;
-        gameState.obstacles = [];
-        gameState.finishLineY = -2000;
-        
-        levelDisplay.innerText = lvl;
-        wavesDisplay.innerText = config.waves;
-        updateHP();
-        
-        if (autoStart) {
-            messageBox.style.display = 'none';
-            gameState.isRunning = true;
-            startBGM();
-        } else {
-            showStartMessage(lvl);
-        }
-    }
-
-    function gameOver() {
-        gameState.isRunning = false; 
-        if(bgmInterval) clearInterval(bgmInterval);
-        msgProgressTag.innerText = "";
-        msgTitle.innerText = "挑战失败"; 
-        msgTitle.style.color = "var(--red)";
-        msgBody.innerText = `你在第 ${gameState.level} 关倒下了。`;
-        msgBtn.innerText = "重新开始";
-        messageBox.style.display = 'block';
-        msgBtn.onclick = () => initLevel(1, false);
+    function gameOver() { 
+        gameState.isRunning = false;
+        updateUI(); 
+        showStartMessage(gameState.level, true); 
     }
 
     function levelComplete() {
         gameState.isRunning = false; 
-        if(bgmInterval) clearInterval(bgmInterval);
+        gameState.obstacles = []; 
+        sounds.win();
         
-        if (gameState.level < 10) {
-            msgProgressTag.innerText = `当前进度: ${gameState.level} / 10`;
-            msgTitle.innerText = "完美过关！"; 
-            msgTitle.style.color = "var(--green)";
-            msgBody.innerText = `准备好迎接第 ${gameState.level + 1} 关了吗？`;
-            msgBtn.innerText = "进入下一关";
-            messageBox.style.display = 'block';
-            msgBtn.onclick = () => initLevel(gameState.level + 1, true, true);
+        if (gameState.level < MAX_LEVELS) {
+            showStartMessage(gameState.level + 1);
         } else {
-            msgProgressTag.innerText = "进度: 10 / 10";
-            msgTitle.innerText = "全满贯！"; 
-            msgTitle.style.color = "var(--finish)";
-            msgBody.innerText = "你已征服全部10个关卡！";
-            msgBtn.innerText = "再玩一次";
+            document.getElementById('msg-title').innerText = "🎉 恭喜通关！";
+            document.getElementById('msg-body').innerHTML = `
+                <p style="font-size:1.5rem; color:var(--cyan);">你已成功征服 15 个关卡！</p>
+                <p>最终得分: ${gameState.score}</p>
+            `;
+            msgBtnContainer.innerHTML = '<button onclick="location.reload()">重新挑战</button>';
             messageBox.style.display = 'block';
-            msgBtn.onclick = () => initLevel(1, false);
         }
     }
 
-    initLevel(1, false);
-    gameLoop();
+    window.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        if (key === 'h') {
+            gameState.devModeVisible = !gameState.devModeVisible;
+            document.getElementById('debug-ui').style.display = gameState.devModeVisible ? 'block' : 'none';
+        }
+        if (!gameState.isRunning) return;
+        if ((key === 'arrowleft' || key === 'a') && gameState.playerLane > 0) gameState.playerLane--;
+        if ((key === 'arrowright' || key === 'd') && gameState.playerLane < TOTAL_LANES-1) gameState.playerLane++;
+    });
+
+    document.getElementById('btn-left').onpointerdown = (e) => { e.preventDefault(); if (gameState.playerLane > 0) gameState.playerLane--; };
+    document.getElementById('btn-right').onpointerdown = (e) => { e.preventDefault(); if (gameState.playerLane < TOTAL_LANES-1) gameState.playerLane++; };
+    document.getElementById('level-slider').oninput = (e) => { document.getElementById('slider-val').innerText = `起始关卡: 第 ${e.target.value} 关`; };
+    
+    window.addEventListener('resize', () => { canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; });
+    canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight;
+    
+    window.loopRunning = false;
+    showStartMessage(1);
 </script>
 </body>
 </html>
