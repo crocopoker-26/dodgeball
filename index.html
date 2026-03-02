@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>躲避球冲刺 - HP中文版</title>
+    <title>躲避球冲刺 - 10关挑战</title>
     <style>
         :root {
             --bg: #0f172a;    
-            --finish: #fbbf24;
+            --finish: #ffffff;
             --red: #ff4444;    
             --yellow: #ffb700; 
             --green: #22c55e;  
+            --blue: #3b82f6;
         }
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
             background-color: var(--bg);
-            font-family: "Microsoft YaHei", sans-serif;
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
             color: white;
             display: flex;
             justify-content: center;
@@ -54,7 +55,7 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
         .ui-text {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
         }
         #hp-display {
@@ -90,27 +91,61 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(15, 23, 42, 0.95);
+            background: rgba(15, 23, 42, 0.98);
             border: 3px solid white;
             padding: 40px 20px;
             text-align: center;
             display: none;
             z-index: 100;
-            width: 75%;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            width: 80%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border-radius: 12px;
         }
+        #msg-progress-tag {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            font-weight: bold;
+        }
+        #msg-title {
+            margin: 0;
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            color: var(--blue);
+        }
+        #msg-body {
+            margin: 20px 0;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #94a3b8;
+        }
+        .rule-item {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 5px 0;
+            font-size: 0.95rem;
+        }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
         button {
             background: white;
             color: black;
             border: none;
-            padding: 15px 40px;
-            font-size: 1.2rem;
+            padding: 15px 45px;
+            font-size: 1.3rem;
             cursor: pointer;
             font-weight: bold;
             font-family: inherit;
-            margin-top: 20px;
+            border-radius: 8px;
+            transition: transform 0.1s;
         }
-        button:active { background: #cbd5e1; }
+        button:active { 
+            background: #cbd5e1;
+            transform: scale(0.95);
+        }
 
         .progress-bar {
             position: absolute;
@@ -120,12 +155,14 @@
             width: 90%;
             height: 8px;
             background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
         }
         #progress-fill { 
             width: 0%; 
             height: 100%; 
-            background: #3b82f6;
-            transition: width 0.3s;
+            background: var(--blue);
+            transition: width 0.3s ease-out;
         }
     </style>
 </head>
@@ -134,7 +171,7 @@
 <div id="game-container">
     <div id="ui-overlay">
         <div>
-            <div class="ui-text">当前关卡: <span id="level-val">1</span></div>
+            <div class="ui-text">进度: <span id="level-val">1</span> / 10</div>
             <div id="hp-display" class="ui-text">HP: <span id="hp-val">3</span></div>
         </div>
         <div style="text-align: right">
@@ -154,9 +191,10 @@
     </div>
 
     <div id="message-box">
-        <h1 id="msg-title" style="margin:0; letter-spacing: 2px;">躲避球冲刺</h1>
-        <p id="msg-body" style="margin-top:20px; color: #94a3b8;">躲避红色和黄色，收集绿色！</p>
-        <button id="msg-btn">开始游戏</button>
+        <div id="msg-progress-tag"></div>
+        <h1 id="msg-title">第 1 / 10 关</h1>
+        <div id="msg-body"></div>
+        <button id="msg-btn">开始挑战</button>
     </div>
 </div>
 
@@ -172,6 +210,7 @@
     const msgTitle = document.getElementById('msg-title');
     const msgBody = document.getElementById('msg-body');
     const msgBtn = document.getElementById('msg-btn');
+    const msgProgressTag = document.getElementById('msg-progress-tag');
 
     let audioCtx = null;
     let bgmInterval = null;
@@ -193,16 +232,16 @@
     };
 
     const levelConfigs = [
-        { speed: 3.0, waves: 10, spawnInterval: 480 },
-        { speed: 3.6, waves: 15, spawnInterval: 470 },
-        { speed: 4.2, waves: 20, spawnInterval: 460 },
-        { speed: 4.8, waves: 25, spawnInterval: 450 },
-        { speed: 5.4, waves: 30, spawnInterval: 440 },
-        { speed: 6.0, waves: 35, spawnInterval: 430 },
-        { speed: 6.6, waves: 40, spawnInterval: 420 },
-        { speed: 7.2, waves: 45, spawnInterval: 410 },
-        { speed: 7.8, waves: 50, spawnInterval: 400 },
-        { speed: 8.8, waves: 60, spawnInterval: 390 }
+        { speed: 3.5, waves: 8, spawnInterval: 480 },
+        { speed: 4.0, waves: 12, spawnInterval: 470 },
+        { speed: 4.6, waves: 16, spawnInterval: 460 },
+        { speed: 5.2, waves: 20, spawnInterval: 450 },
+        { speed: 5.8, waves: 25, spawnInterval: 440 },
+        { speed: 6.4, waves: 30, spawnInterval: 430 },
+        { speed: 7.0, waves: 35, spawnInterval: 420 },
+        { speed: 7.6, waves: 40, spawnInterval: 410 },
+        { speed: 8.2, waves: 45, spawnInterval: 400 },
+        { speed: 9.0, waves: 50, spawnInterval: 380 }
     ];
 
     function initAudio() {
@@ -298,13 +337,14 @@
         shuffled.slice(0, count).forEach(lane => {
             const r = Math.random();
             let type = 'red';
-            if (r > 0.82) type = 'green';
+            if (r > 0.85) type = 'green';
             else if (r > 0.65) type = 'yellow';
             gameState.obstacles.push({ lane, y: -50, type });
         });
         gameState.wavesSpawned++;
         wavesDisplay.innerText = gameState.totalWaves - gameState.wavesSpawned;
-        if (gameState.wavesSpawned === gameState.totalWaves) gameState.finishLineY = -1000;
+        // 终点线距离设定
+        if (gameState.wavesSpawned === gameState.totalWaves) gameState.finishLineY = -400;
     }
 
     function update() {
@@ -347,8 +387,10 @@
         for(let i=1; i<TOTAL_LANES; i++) {
             ctx.beginPath(); ctx.moveTo(i*laneW, 0); ctx.lineTo(i*laneW, canvas.height); ctx.stroke();
         }
+        // 终点线颜色改为纯白色
         if (gameState.wavesSpawned === gameState.totalWaves) {
-            ctx.fillStyle = 'var(--finish)'; ctx.fillRect(0, gameState.finishLineY, canvas.width, 25);
+            ctx.fillStyle = '#ffffff'; 
+            ctx.fillRect(0, gameState.finishLineY, canvas.width, 25);
         }
         ctx.fillStyle = "#ffffff";
         ctx.beginPath(); ctx.arc((gameState.playerLane + 0.5) * laneW, canvas.height * 0.85, 16, 0, Math.PI*2); ctx.fill();
@@ -365,10 +407,37 @@
 
     function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
 
-    function initLevel(lvl, keepHealth = false) {
+    function showStartMessage(lvl) {
+        gameState.isRunning = false;
+        messageBox.style.display = 'block';
+        msgProgressTag.innerText = ""; // 初始消息不需要右上角标签
+        msgTitle.innerText = `第 ${lvl} / 10 关`;
+        msgTitle.style.color = "var(--blue)";
+        
+        if (lvl === 1) {
+            msgBody.innerHTML = `
+                <p>左右滑动或点击按钮控制白球：</p>
+                <div class="rule-item"><div class="dot" style="background:var(--red)"></div> 红色：HP -3 (致命)</div>
+                <div class="rule-item"><div class="dot" style="background:var(--yellow)"></div> 黄色：HP -1</div>
+                <div class="rule-item"><div class="dot" style="background:var(--green)"></div> 绿色：HP +1</div>
+            `;
+        } else {
+            msgBody.innerText = "难度提升，保持专注！";
+        }
+        
+        msgBtn.innerText = "开始挑战";
+        msgBtn.onclick = () => {
+            messageBox.style.display = 'none';
+            gameState.isRunning = true;
+            startBGM();
+        };
+    }
+
+    function initLevel(lvl, keepHealth = false, autoStart = false) {
         initAudio(); 
         const config = levelConfigs[lvl - 1] || levelConfigs[0];
         gameState.level = lvl;
+        
         if (!keepHealth) gameState.health = (lvl === 1) ? 3 : gameState.levelStartHealth;
         gameState.levelStartHealth = gameState.health;
         gameState.speed = config.speed;
@@ -377,44 +446,57 @@
         gameState.wavesSpawned = 0;
         gameState.obstacles = [];
         gameState.finishLineY = -2000;
-        gameState.isRunning = true;
+        
         levelDisplay.innerText = lvl;
         wavesDisplay.innerText = config.waves;
         updateHP();
-        messageBox.style.display = 'none';
-        startBGM();
+        
+        if (autoStart) {
+            messageBox.style.display = 'none';
+            gameState.isRunning = true;
+            startBGM();
+        } else {
+            showStartMessage(lvl);
+        }
     }
 
     function gameOver() {
-        gameState.isRunning = false; if(bgmInterval) clearInterval(bgmInterval);
-        msgTitle.innerText = "游戏结束"; msgTitle.style.color = "var(--red)";
-        msgBody.innerText = `你在第 ${gameState.level} 关失败了。`;
-        msgBtn.innerText = "再试一次";
+        gameState.isRunning = false; 
+        if(bgmInterval) clearInterval(bgmInterval);
+        msgProgressTag.innerText = "";
+        msgTitle.innerText = "挑战失败"; 
+        msgTitle.style.color = "var(--red)";
+        msgBody.innerText = `你在第 ${gameState.level} 关倒下了。`;
+        msgBtn.innerText = "重新开始";
         messageBox.style.display = 'block';
         msgBtn.onclick = () => initLevel(1, false);
     }
 
     function levelComplete() {
-        gameState.isRunning = false; if(bgmInterval) clearInterval(bgmInterval);
+        gameState.isRunning = false; 
+        if(bgmInterval) clearInterval(bgmInterval);
+        
         if (gameState.level < 10) {
-            msgTitle.innerText = "挑战成功！"; msgTitle.style.color = "var(--green)";
-            msgBody.innerText = `准备好进入第 ${gameState.level + 1} 关了吗？`;
+            msgProgressTag.innerText = `当前进度: ${gameState.level} / 10`;
+            msgTitle.innerText = "完美过关！"; 
+            msgTitle.style.color = "var(--green)";
+            msgBody.innerText = `准备好迎接第 ${gameState.level + 1} 关了吗？`;
             msgBtn.innerText = "进入下一关";
             messageBox.style.display = 'block';
-            msgBtn.onclick = () => initLevel(gameState.level + 1, true);
+            msgBtn.onclick = () => initLevel(gameState.level + 1, true, true);
         } else {
-            msgTitle.innerText = "恭喜通关！"; msgTitle.style.color = "var(--finish)";
-            msgBody.innerText = "你已征服所有关卡！";
-            msgBtn.innerText = "重新开始挑战";
+            msgProgressTag.innerText = "进度: 10 / 10";
+            msgTitle.innerText = "全满贯！"; 
+            msgTitle.style.color = "var(--finish)";
+            msgBody.innerText = "你已征服全部10个关卡！";
+            msgBtn.innerText = "再玩一次";
             messageBox.style.display = 'block';
             msgBtn.onclick = () => initLevel(1, false);
         }
     }
 
-    msgBtn.onclick = () => initLevel(1, false);
-    messageBox.style.display = 'block';
+    initLevel(1, false);
     gameLoop();
 </script>
 </body>
 </html>
-
